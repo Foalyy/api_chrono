@@ -1,10 +1,15 @@
 use chrono_state::{ChronoState, ChronoStateUpdate};
-use rocket::{serde::json::Json, tokio::sync::RwLock, State};
+use config::Config;
+use rocket::serde::json::Json;
+use rocket::{fairing::AdHoc, tokio::sync::RwLock, State};
+
+use crate::config::ApiKey;
 
 #[macro_use]
 extern crate rocket;
 
 mod chrono_state;
+mod config;
 mod utils;
 
 #[get("/")]
@@ -19,6 +24,7 @@ async fn state(chrono_state: &State<RwLock<ChronoState>>) -> Json<ChronoState> {
 
 #[post("/state", format = "application/json", data = "<update>")]
 async fn update_state(
+    _api_key: ApiKey,
     update: Json<ChronoStateUpdate>,
     chrono_state: &State<RwLock<ChronoState>>,
 ) -> Json<ChronoState> {
@@ -28,7 +34,7 @@ async fn update_state(
 }
 
 #[post("/reset")]
-async fn reset_state(chrono_state: &State<RwLock<ChronoState>>) {
+async fn reset_state(_api_key: ApiKey, chrono_state: &State<RwLock<ChronoState>>) {
     let mut state = chrono_state.write().await;
     state.reset()
 }
@@ -38,4 +44,5 @@ fn rocket() -> _ {
     rocket::build()
         .mount("/", routes![index, state, update_state, reset_state])
         .manage(RwLock::new(ChronoState::default()))
+        .attach(AdHoc::config::<Config>())
 }
