@@ -1,6 +1,6 @@
 use rocket::serde::{Deserialize, Serialize};
 
-use crate::utils::{Timestamp, timestamp};
+use crate::utils::{timestamp, Timestamp};
 
 #[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -186,6 +186,10 @@ pub struct ChronoStateUpdate {
 }
 
 impl ChronoState {
+    pub fn reset(&mut self) {
+        std::mem::take(self);
+    }
+
     pub fn update_with(&mut self, update: ChronoStateUpdate) {
         self.last_update = Some(timestamp());
         if let Some(zones) = update.zones {
@@ -207,7 +211,10 @@ impl ChronoState {
         }
         if let Some(launchpads_fx) = update.launchpads_fx {
             if let Some(plaintcontrix) = launchpads_fx.plaintcontrix {
-                Self::update_launchpad_state_with(&mut self.launchpads_fx.plaintcontrix, plaintcontrix);
+                Self::update_launchpad_state_with(
+                    &mut self.launchpads_fx.plaintcontrix,
+                    plaintcontrix,
+                );
             }
             if let Some(toutatis) = launchpads_fx.toutatis {
                 Self::update_launchpad_state_with(&mut self.launchpads_fx.toutatis, toutatis);
@@ -315,7 +322,7 @@ impl ChronoState {
                 }
             }
         } else {
-           *state = None;
+            *state = None;
         }
     }
 }

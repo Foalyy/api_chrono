@@ -27,9 +27,15 @@ async fn update_state(
     Json(state.clone())
 }
 
+#[post("/reset")]
+async fn reset_state(chrono_state: &State<RwLock<ChronoState>>) {
+    let mut state = chrono_state.write().await;
+    state.reset()
+}
+
 #[launch]
 fn rocket() -> _ {
     rocket::build()
-        .mount("/", routes![index, state, update_state])
+        .mount("/", routes![index, state, update_state, reset_state])
         .manage(RwLock::new(ChronoState::default()))
 }
