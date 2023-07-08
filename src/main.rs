@@ -1,9 +1,15 @@
-use chrono_state::{ChronoState, ChronoStateUpdate};
+use std::ops::Deref;
+
+use chrono_state::{ChronoState, ChronoStateUpdate, LaunchpadDetails, LaunchpadType};
 use config::Config;
+use rocket::fs::FileServer;
 use rocket::serde::json::Json;
 use rocket::{fairing::AdHoc, tokio::sync::RwLock, State};
+use rocket_dyn_templates::{context, Template};
+use utils::timestamp;
 
 use crate::config::ApiKey;
+use crate::utils::Timestamp;
 
 #[macro_use]
 extern crate rocket;
@@ -13,8 +19,20 @@ mod config;
 mod utils;
 
 #[get("/")]
-fn index() -> &'static str {
-    ""
+fn index(launchpads: &State<Vec<LaunchpadDetails>>) -> Template {
+    Template::render(
+        "main",
+        context! {
+            time_url: uri!(time()).to_string(),
+            state_url: uri!(state()).to_string(),
+            launchpads: launchpads.deref()
+        },
+    )
+}
+
+#[get("/time")]
+async fn time() -> Json<Timestamp> {
+    Json(timestamp())
 }
 
 #[get("/state")]
@@ -41,8 +59,44 @@ async fn reset_state(_api_key: ApiKey, chrono_state: &State<RwLock<ChronoState>>
 
 #[launch]
 fn rocket() -> _ {
+    let launchpads = vec![
+        LaunchpadDetails {
+            id: "plaintcontrix".to_string(),
+            launchpad_type: LaunchpadType::FX,
+            launchpad_name: "Plaintcontrix".to_string(),
+        },
+        LaunchpadDetails {
+            id: "toutatis".to_string(),
+            launchpad_type: LaunchpadType::FX,
+            launchpad_name: "Toutatis".to_string(),
+        },
+        LaunchpadDetails {
+            id: "menhir".to_string(),
+            launchpad_type: LaunchpadType::FX,
+            launchpad_name: "Menhir".to_string(),
+        },
+        LaunchpadDetails {
+            id: "obelix".to_string(),
+            launchpad_type: LaunchpadType::FX,
+            launchpad_name: "Obelix".to_string(),
+        },
+        LaunchpadDetails {
+            id: "falballa".to_string(),
+            launchpad_type: LaunchpadType::MF,
+            launchpad_name: "Falballa".to_string(),
+        },
+        LaunchpadDetails {
+            id: "grossebaf".to_string(),
+            launchpad_type: LaunchpadType::MF,
+            launchpad_name: "Grossebaf".to_string(),
+        },
+    ];
+
     rocket::build()
-        .mount("/", routes![index, state, update_state, reset_state])
+        .mount("/", routes![index, time, state, update_state, reset_state])
+        .mount("/static", FileServer::from("static/").rank(0))
         .manage(RwLock::new(ChronoState::default()))
+        .manage(launchpads)
         .attach(AdHoc::config::<Config>())
+        .attach(Template::fairing())
 }

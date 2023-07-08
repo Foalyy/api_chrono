@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Chrono</title>
+        <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+        <link href="/static/fa/css/fontawesome.min.css" rel="stylesheet">
+        <link href="/static/fa/css/brands.min.css" rel="stylesheet">
+        <link href="/static/fa/css/solid.min.css" rel="stylesheet">
+        <link href="/static/css/main.css" rel="stylesheet">
+        <link rel="shortcut icon" href="/static/favicon.png">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Open+Sans&family=Rajdhani:wght@300;500;700&display=swap" rel="stylesheet">
+    </head>
+    <body>
+        <div class="page container-fluid">
+            <div class="row header">
+                <div class="col-12 col-md"></div>
+                <div class="col-12 col-sm-auto header-title"><span>Jupiter</span> <span>space</span> <span>center</span></div>
+                <div class="col-12 col-sm header-current-time"><span class="current-time"></span></div>
+            </div>
+            <div class="row status">
+                <div class="col-xs-12 col-sm-6 col-md-3 col-xl-2 countdown">
+                    <div class="countdown-dots">
+                    </div>
+                    <div class="countdown-value hidden"></div>
+                    <div class="countdown-paused-icon"><i class="fa-solid fa-pause"></i></div>
+                </div>
+                <div class="col-xs-12 col-sm-6 next-launch">
+                    <div class="section-header next-launch-header">Next launch</div>
+                    <div class="next-launch-empty">
+                        <div class="next-launch-empty-background"><i class="fa-solid fa-rocket"></i></div>
+                        <div class="next-launch-empty-label">Awaiting the next project...</div>
+                    </div>
+                    <div class="next-launch-info hidden">
+                        <div class="next-launch-main">
+                            <span class="next-launch-matricule matricule"></span> <span class="next-launch-project-name"></span>
+                        </div>
+                        <div class="next-launch-secondary">
+                            <span class="next-launch-label">Club :</span> <span class="next-launch-club"></span>
+                        </div>
+                        <div class="next-launch-secondary">
+                            <span class="next-launch-label">Launchpad :</span> <span class="next-launch-launchpad"></span>
+                        </div>
+                        <div class="container-fluid">
+                            <div class="row">
+                                <div class="col-12 col-lg-6">
+                                    <div class="next-launch-secondary">
+                                        <span class="next-launch-label">Color :</span> <span class="next-launch-rocket-color"></span>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-lg-6">
+                                    <div class="next-launch-secondary">
+                                        <span class="next-launch-label">Parachute :</span> <span class="next-launch-parachute-color"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col status-lights">
+                    <div class="container-fluid">
+                        <div class="row">
+                            <div class="col-12 col-sm col-md-12 status-light status-light-unknown status-weather">
+                                <i class="fa-solid fa-large fa-wind status-light-icon-left"></i> Weather <i class="fa-solid fa-large fa-circle-question status-light-icon-right"></i>
+                            </div>
+                            <div class="col-12 col-sm col-md-12 status-light status-light-unknown status-zone-safety">
+                                <i class="fa-solid fa-large fa-binoculars status-light-icon-left"></i> Safety <i class="fa-solid fa-large fa-circle-question status-light-icon-right"></i>
+                            </div>
+                            <div class="col-12 col-sm col-md-12 status-light status-light-unknown status-zone-fx">
+                                <i class="fa-solid fa-large fa-rocket status-light-icon-left"></i> Fusex <i class="fa-solid fa-large fa-circle-question status-light-icon-right"></i>
+                            </div>
+                            <div class="col-12 col-sm col-md-12 status-light status-light-unknown status-zone-mf">
+                                <i class="fa-solid fa-large fa-rocket status-light-icon-left"></i> Minif <i class="fa-solid fa-large fa-circle-question status-light-icon-right"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row launchpads mt-3">
+                {% for launchpad in launchpads %}
+                    <div class="col-12 col-sm-6 col-lg-4 col-xl launchpad launchpad-{{ launchpad.id }}" data-launchpad-type="{{ launchpad.launchpad_type | lower }}" data-launchpad-name="{{ launchpad.id }}">
+                        <div class="section-header launchpad-header launchpad-header-{{ launchpad.launchpad_type | lower }}">{{ launchpad.launchpad_name }}</div>
+                        <div class="launchpad-empty launchpad-empty-{{ launchpad.launchpad_type | lower }} launchpad-{{ launchpad.id }}-empty"></div>
+                        <div class="launchpad-info launchpad-{{ launchpad.id }}-info hidden">
+                            <div class="launchpad-flight-result launchpad-{{ launchpad.id }}-flight-result status-light hidden">
+                                <span class="launchpad-flight-result-nominal launchpad-{{ launchpad.id }}-flight-result-nominal hidden"><i class="fa-solid fa-rocket"></i> Nominal</span>
+                                <span class="launchpad-flight-result-balistic launchpad-{{ launchpad.id }}-flight-result-balistic hidden"><i class="fa-solid fa-carrot"></i> Balistic</span>
+                            </div>
+
+                            <div class="launchpad-countdown launchpad-{{ launchpad.id }}-countdown infoline">
+                                <div class="infoline-el"><i class="launchpad-countdown-pause-icon fa-solid fa-pause"></i></div>
+                                <div class="launchpad-countdown-value launchpad-{{ launchpad.id }}-countdown-value infoline-el"></div>
+                            </div>
+
+                            <div class="launchpad-{{ launchpad.id }}-project">
+                                <span class="launchpad-{{ launchpad.id }}-matricule matricule"></span> <span class="launchpad-{{ launchpad.id }}-project-name"></span>
+                            </div>
+                            <div class="launchpad-club">
+                                <span class="launchpad-label">Club :</span> <span class="launchpad-{{ launchpad.id }}-club"></span>
+                            </div>
+                            <div class="launchpad-motor">
+                                <span class="launchpad-label">Motor :</span> <span class="launchpad-{{ launchpad.id }}-motor"></span>
+                            </div>
+                            <div class="launchpad-rocket-color">
+                                <span class="launchpad-label">Color :</span> <span class="launchpad-{{ launchpad.id }}-rocket-color"></span>
+                            </div>
+                            <div class="launchpad-parachute-color">
+                                <span class="launchpad-label">Parachute :</span> <span class="launchpad-{{ launchpad.id }}-parachute-color"></span>
+                            </div>
+                            <div class="launchpad-telem launchpad-{{ launchpad.id }}-telem infoline">
+                                <span class="launchpad-label infoline-el">Telem :</span>
+                                <span class="launchpad-{{ launchpad.id }}-telem-type infoline-el infoline-el-trunc"></span>
+                                <span class="launchpad-{{ launchpad.id }}-telem-frequency infoline-el infoline-el-trunc"></span>
+                                <span class="launchpad-telem-on launchpad-{{ launchpad.id }}-telem-on infoline-el hidden"><i class="fa-solid fa-large fa-tower-broadcast"></i></span>
+                            </div>
+                            <div class="launchpad-project-specs launchpad-{{ launchpad.id }}-project-specs">
+                                <i class="launchpad-{{ launchpad.id }}-spec-special project-spec project-spec-special hidden"></i>
+                                <i class="launchpad-{{ launchpad.id }}-spec-roll-control project-spec project-spec-roll-control hidden"></i>
+                                <i class="launchpad-{{ launchpad.id }}-spec-supersonic project-spec project-spec-supersonic hidden"></i>
+                                <i class="launchpad-{{ launchpad.id }}-spec-two-stage project-spec project-spec-two-stage hidden"></i>
+                            </div>
+                            <div class="launchpad-check launchpad-check-ok hidden launchpad-{{ launchpad.id }}-motor-destocked">Motor destocked</div>
+                            <div class="launchpad-check launchpad-check-ok launchpad-{{ launchpad.id }}-motor-inserted">Motor inserted</div>
+                            <div class="launchpad-check launchpad-{{ launchpad.id }}-motor-wired">Motor wired</div>
+                            <div class="container">
+                                <div class="row">
+                                    <div class="col">
+                                        <div class="launchpad-check launchpad-{{ launchpad.id }}-pyro-ok">Pyro ok</div>
+                                    </div>
+                                    <div class="col">
+                                        <div class="launchpad-check launchpad-{{ launchpad.id }}-club-ok">Club ok</div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col">
+                                        <div class="launchpad-check launchpad-{{ launchpad.id }}-ddo-ok">DDO ok</div>
+                                    </div>
+                                    <div class="col">
+                                        <div class="launchpad-check launchpad-{{ launchpad.id }}-rso-ok">RSO ok</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="launchpad-check launchpad-{{ launchpad.id }}-landed">Landed</div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            <div class="row mt-1">
+                <div class="col-12 col-md-6 clubs-tent">
+                    <div class="section-header clubs-tent-header">Clubs tent</div>
+                    <div class="clubs-tent-info">
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 jupiter">
+                    <div class="section-header jupiter-header">Jupiter</div>
+                    <div class="jupiter-info">
+                    </div>
+                </div>
+            </div>
+            <div class="overlay-loading">
+                <i class="fa-solid fa-hourglass-half"></i>
+            </div>
+        </div>
+
+        <script>
+            let getTimeURL = '{{ time_url | safe }}';
+            let loadStateURL = '{{ state_url | safe }}';
+        </script>        
+        <script src="/static/js/cash.min.js"></script>
+        <script src="/static/js/bootstrap.bundle.min.js"></script>
+        <script src="/static/js/main.js"></script>
+    </body>
+</html>

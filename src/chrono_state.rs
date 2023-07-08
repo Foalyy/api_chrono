@@ -13,6 +13,12 @@ pub enum LightColor {
 }
 
 #[derive(Debug, Clone, Default, Serialize)]
+pub struct SafetyChecks {
+    pub weather: LightColor,
+    pub zone_safety: LightColor,
+}
+
+#[derive(Debug, Clone, Default, Serialize)]
 pub struct Zones {
     pub mf: LightColor,
     pub fx: LightColor,
@@ -55,6 +61,20 @@ pub struct Launchpad {
 }
 
 #[derive(Debug, Clone, Default, Serialize)]
+pub struct LaunchpadDetails {
+    pub id: String,
+    pub launchpad_type: LaunchpadType,
+    pub launchpad_name: String,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub enum LaunchpadType {
+    #[default]
+    FX,
+    MF,
+}
+
+#[derive(Debug, Clone, Default, Serialize)]
 pub struct LaunchpadState {
     pub countdown: isize,
     pub countdown_paused: bool,
@@ -66,7 +86,7 @@ pub struct LaunchpadState {
     pub two_stage: bool,
     pub roll_control: bool,
     pub supersonic: bool,
-    pub rf: bool,
+    pub rf: String,
     pub rf_onboard: bool,
     pub rf_check: bool,
     pub rf_on: bool,
@@ -111,11 +131,18 @@ pub struct LaunchpadsMF {
 pub struct ChronoState {
     pub last_update: Option<Timestamp>,
     pub zones: Zones,
+    pub safety_checks: SafetyChecks,
     pub next_launch: Option<NextLaunch>,
     pub clubs_tent: Vec<TrackedProject>,
     pub jupiter: Vec<TrackedProject>,
     pub launchpads_fx: LaunchpadsFX,
     pub launchpads_mf: LaunchpadsMF,
+}
+
+#[derive(Debug, Clone, Default, Deserialize)]
+pub struct SafetyChecksUpdate {
+    pub weather: Option<LightColor>,
+    pub zone_safety: Option<LightColor>,
 }
 
 #[derive(Debug, Clone, Default, Deserialize)]
@@ -156,7 +183,7 @@ pub struct LaunchpadStateUpdate {
     pub two_stage: Option<bool>,
     pub roll_control: Option<bool>,
     pub supersonic: Option<bool>,
-    pub rf: Option<bool>,
+    pub rf: Option<String>,
     pub rf_onboard: Option<bool>,
     pub rf_check: Option<bool>,
     pub rf_on: Option<bool>,
@@ -177,6 +204,7 @@ pub struct LaunchpadStateUpdate {
 #[derive(Debug, Clone, Default, Deserialize)]
 pub struct ChronoStateUpdate {
     pub zones: Option<ZonesUpdate>,
+    pub safety_checks: Option<SafetyChecksUpdate>,
     #[serde(default, with = "::serde_with::rust::double_option")]
     pub next_launch: Option<Option<NextLaunch>>,
     pub clubs_tent: Option<Vec<TrackedProject>>,
@@ -198,6 +226,14 @@ impl ChronoState {
             }
             if let Some(fx) = zones.fx {
                 self.zones.fx = fx;
+            }
+        }
+        if let Some(safety_checks) = update.safety_checks {
+            if let Some(weather) = safety_checks.weather {
+                self.safety_checks.weather = weather;
+            }
+            if let Some(zone_safety) = safety_checks.zone_safety {
+                self.safety_checks.zone_safety = zone_safety;
             }
         }
         if let Some(next_launch) = update.next_launch {
