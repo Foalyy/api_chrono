@@ -25,7 +25,7 @@ impl<'r> FromRequest<'r> for ApiKey {
         match request.guard::<&State<Config>>().await {
             request::Outcome::Success(config) => {
                 if !config.api_key.is_empty() {
-                    match request.headers().get_one("api_key") {
+                    match request.headers().get_one("apikey") {
                         Some(provided_key) => {
                             if provided_key == config.api_key {
                                 request::Outcome::Success(ApiKey(provided_key.to_string()))

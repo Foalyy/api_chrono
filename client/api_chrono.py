@@ -14,9 +14,9 @@ def _bg_thread_worker():
             resp = requests.get(f'{api_url}/state', timeout=timeout).json()
             bg_to_main_queue.put(resp)
         elif message == 'post':
-            requests.post(f'{api_url}/state', headers={'api_key': api_key}, json=payload, timeout=timeout)
+            requests.post(f'{api_url}/state', headers={'apikey': api_key}, json=payload, timeout=timeout)
         elif message == 'reset':
-            requests.post(f'{api_url}/reset', headers={'api_key': api_key}, timeout=timeout)
+            requests.post(f'{api_url}/reset', headers={'apikey': api_key}, timeout=timeout)
         main_to_bg_queue.task_done()
 
 bg_thread = threading.Thread(target=_bg_thread_worker, daemon=True)
