@@ -30,6 +30,9 @@ def set_api_key(key):
     global api_key
     api_key = key
 
+def close():
+    main_to_bg_queue.join()
+
 def post(state):
     main_to_bg_queue.put(('post', state))
 
@@ -60,6 +63,20 @@ def set_zone_fx(color):
     post({
         'zones': {
             'fx': color
+        }
+    })
+
+def set_weather(color):
+    post({
+        'safety_checks': {
+            'weather': color
+        }
+    })
+
+def set_zone_safety(color):
+    post({
+        'safety_checks': {
+            'zone_safety': color
         }
     })
 
