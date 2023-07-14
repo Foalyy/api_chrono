@@ -152,6 +152,14 @@ function updateState(state) {
             container.append(el);
         }
     }
+
+    if (state.message) {
+        $('.banner-text').text(state.message);
+        $('.banner').removeClass('hidden');
+    } else {
+        $('.banner').addClass('hidden');
+        $('.banner-text').text('');
+    }
 }
 
 function updateLight(light, color) {

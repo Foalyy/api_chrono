@@ -137,6 +137,7 @@ pub struct ChronoState {
     pub jupiter: Vec<TrackedProject>,
     pub launchpads_fx: LaunchpadsFX,
     pub launchpads_mf: LaunchpadsMF,
+    pub message: String,
 }
 
 #[derive(Debug, Clone, Default, Deserialize)]
@@ -211,6 +212,7 @@ pub struct ChronoStateUpdate {
     pub jupiter: Option<Vec<TrackedProject>>,
     pub launchpads_fx: Option<LaunchpadsFXUpdate>,
     pub launchpads_mf: Option<LaunchpadsMFUpdate>,
+    pub message: Option<String>,
 }
 
 impl ChronoState {
@@ -269,6 +271,9 @@ impl ChronoState {
             if let Some(grossebaf) = launchpads_mf.grossebaf {
                 Self::update_launchpad_state_with(&mut self.launchpads_mf.grossebaf, grossebaf);
             }
+        }
+        if let Some(message) = update.message {
+            self.message = message;
         }
     }
 

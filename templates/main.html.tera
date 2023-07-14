@@ -164,6 +164,9 @@
                 <i class="fa-solid fa-hourglass-half"></i>
             </div>
         </div>
+        <div class="banner hidden">
+            <div class="banner-text"></div>
+        </div>
 
         <script>
             let getTimeURL = '{{ time_url | safe }}';

@@ -113,4 +113,8 @@ def set_project_on_launchpad(zone, launchpad, project):
             launchpad: project
         }
     })
-    
+
+def set_message(message):
+    post({
+        'message': message,
+    })

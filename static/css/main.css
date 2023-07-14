@@ -18,6 +18,12 @@
     --color-yellow: #eeea11;
     --color-orange: #e3980e;
     --color-orange-darker: #aa6f00;
+    --color-banner: #121318;
+    --color-banner-2: #d6ad2470;
+}
+
+body {
+    overflow-x: hidden;
 }
 
 .page {
@@ -566,6 +572,7 @@
 .launchpad-check {
     text-align: center;
     opacity: 0.2;
+    white-space: nowrap;
 }
 
 .launchpad-check-ok {
@@ -623,4 +630,22 @@
     100% {
         transform: translate(-50%, -50%) rotate(359.9deg);
     }
+}
+
+.banner {
+    position: sticky;
+    bottom: 0;
+    width: 100%;
+    padding: 1em 0;
+    color: var(--color-foreground);
+    background-color: var(--color-background-lighter);
+    background-image: linear-gradient(transparent 0%, var(--color-banner) 20%, var(--color-banner) 80%, transparent 100%), linear-gradient(135deg, var(--color-banner-2) 25%, var(--color-banner) 25%, var(--color-banner) 50%, var(--color-banner-2) 50%, var(--color-banner-2) 75%, var(--color-banner) 75%, var(--color-banner) 100%);
+    background-size: auto auto, 15px 15px;
+    overflow-x: hidden;
+    text-align: center;
+    font-weight: bold;
+}
+
+.banner-text {
+    display: inline-block;
 }
