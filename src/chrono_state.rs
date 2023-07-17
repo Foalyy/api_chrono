@@ -1,8 +1,15 @@
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
+
+use chrono_rs::TimeZone;
+use rocket::response::{self, Responder, Response};
+use rocket::serde::json::Json;
 use rocket::serde::{Deserialize, Serialize};
+use rocket::Request;
 
 use crate::utils::{timestamp, Timestamp};
 
-#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, Hash)]
 #[serde(rename_all = "lowercase")]
 pub enum LightColor {
     #[default]
@@ -12,19 +19,19 @@ pub enum LightColor {
     Green,
 }
 
-#[derive(Debug, Clone, Default, Serialize)]
+#[derive(Debug, Clone, Default, Serialize, Hash)]
 pub struct SafetyChecks {
     pub weather: LightColor,
     pub zone_safety: LightColor,
 }
 
-#[derive(Debug, Clone, Default, Serialize)]
+#[derive(Debug, Clone, Default, Serialize, Hash)]
 pub struct Zones {
     pub mf: LightColor,
     pub fx: LightColor,
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, Hash)]
 pub struct NextLaunch {
     #[serde(flatten)]
     pub project: Project,
@@ -36,7 +43,7 @@ pub struct NextLaunch {
 
 pub type ProjectCode = String;
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, Hash)]
 pub struct Project {
     pub id: Option<usize>,
     pub code: ProjectCode,
@@ -48,33 +55,33 @@ pub struct Project {
     pub parachute_color: String,
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, Hash)]
 pub struct TrackedProject {
     pub arrival_time: Timestamp,
     #[serde(flatten)]
     pub project: Project,
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, Hash)]
 pub struct Launchpad {
     pub launchpad_name: String,
 }
 
-#[derive(Debug, Clone, Default, Serialize)]
+#[derive(Debug, Clone, Default, Serialize, Hash)]
 pub struct LaunchpadDetails {
     pub id: String,
     pub launchpad_type: LaunchpadType,
     pub launchpad_name: String,
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, Hash)]
 pub enum LaunchpadType {
     #[default]
     FX,
     MF,
 }
 
-#[derive(Debug, Clone, Default, Serialize)]
+#[derive(Debug, Clone, Default, Serialize, Hash)]
 pub struct LaunchpadState {
     pub countdown: isize,
     pub countdown_paused: bool,
@@ -104,7 +111,7 @@ pub struct LaunchpadState {
     pub flight_result: FlightResult,
 }
 
-#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, Hash)]
 #[serde(rename_all = "lowercase")]
 pub enum FlightResult {
     #[default]
@@ -113,7 +120,7 @@ pub enum FlightResult {
     Balistic,
 }
 
-#[derive(Debug, Clone, Default, Serialize)]
+#[derive(Debug, Clone, Default, Serialize, Hash)]
 pub struct LaunchpadsFX {
     pub plaintcontrix: Option<LaunchpadState>,
     pub toutatis: Option<LaunchpadState>,
@@ -121,7 +128,7 @@ pub struct LaunchpadsFX {
     pub obelix: Option<LaunchpadState>,
 }
 
-#[derive(Debug, Clone, Default, Serialize)]
+#[derive(Debug, Clone, Default, Serialize, Hash)]
 pub struct LaunchpadsMF {
     pub falballa: Option<LaunchpadState>,
     pub grossebaf: Option<LaunchpadState>,
@@ -138,6 +145,11 @@ pub struct ChronoState {
     pub launchpads_fx: LaunchpadsFX,
     pub launchpads_mf: LaunchpadsMF,
     pub message: String,
+
+    #[serde(skip)]
+    pub last_update_formated: Option<String>,
+    #[serde(skip)]
+    pub hash: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, Deserialize)]
@@ -275,6 +287,20 @@ impl ChronoState {
         if let Some(message) = update.message {
             self.message = message;
         }
+
+        if let Some(last_update) = self.last_update {
+            if let chrono_rs::LocalResult::Single(last_modified) =
+                chrono_rs::Utc.timestamp_opt(last_update as i64, 0)
+            {
+                self.last_update_formated = Some(format!(
+                    "{}",
+                    last_modified.format("%a, %d %b %Y %H:%M:%S GMT")
+                ));
+            }
+        }
+        let mut hasher = DefaultHasher::new();
+        self.hash(&mut hasher);
+        self.hash = Some(format!("{}", hasher.finish()));
     }
 
     fn update_launchpad_state_with(
@@ -365,5 +391,35 @@ impl ChronoState {
         } else {
             *state = None;
         }
+    }
+}
+
+impl Hash for ChronoState {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.last_update.hash(state);
+        self.zones.hash(state);
+        self.safety_checks.hash(state);
+        self.next_launch.hash(state);
+        self.clubs_tent.hash(state);
+        self.jupiter.hash(state);
+        self.launchpads_fx.hash(state);
+        self.launchpads_mf.hash(state);
+        self.message.hash(state);
+    }
+}
+
+impl<'r> Responder<'r, 'static> for ChronoState {
+    fn respond_to(self, request: &'r Request<'_>) -> response::Result<'static> {
+        let mut response = Response::build_from(Json(&self).respond_to(request)?);
+        if let Some(last_update_formated) = self.last_update_formated {
+            response.raw_header(
+                rocket::http::hyper::header::LAST_MODIFIED.as_str(),
+                last_update_formated,
+            );
+        }
+        if let Some(hash) = self.hash {
+            response.raw_header(rocket::http::hyper::header::ETAG.as_str(), hash);
+        }
+        response.ok()
     }
 }

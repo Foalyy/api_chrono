@@ -36,8 +36,8 @@ async fn time() -> Json<Timestamp> {
 }
 
 #[get("/state")]
-async fn state(chrono_state: &State<RwLock<ChronoState>>) -> Json<ChronoState> {
-    Json(chrono_state.read().await.clone())
+async fn state(chrono_state: &State<RwLock<ChronoState>>) -> ChronoState {
+    chrono_state.read().await.clone()
 }
 
 #[post("/state", format = "application/json", data = "<update>")]
