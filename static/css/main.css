@@ -417,6 +417,12 @@ body {
     border: 2px solid var(--color-green-darker);
 }
 
+.status-light-orange {
+    background-image: linear-gradient(transparent 0%, var(--color-orange) 30%, var(--color-orange) 70%, transparent 100%), linear-gradient(135deg, var(--color-orange) 25%, var(--color-orange-darker) 25%, var(--color-orange-darker) 50%, var(--color-orange) 50%, var(--color-orange) 75%, var(--color-orange-darker) 75%, var(--color-orange-darker) 100%);
+    background-size: auto auto, 15px 15px;
+    border: 2px solid var(--color-orange-darker);
+}
+
 .status-light-red {
     background-image: linear-gradient(transparent 0%, var(--color-red) 30%, var(--color-red) 70%, transparent 100%), linear-gradient(135deg, var(--color-red) 25%, var(--color-red-darker) 25%, var(--color-red-darker) 50%, var(--color-red) 50%, var(--color-red) 75%, var(--color-red-darker) 75%, var(--color-red-darker) 100%);
     background-size: auto auto, 15px 15px;

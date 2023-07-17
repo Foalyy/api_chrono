@@ -8,7 +8,7 @@ pub enum LightColor {
     #[default]
     Unknown,
     Red,
-    Yellow,
+    Orange,
     Green,
 }
 
