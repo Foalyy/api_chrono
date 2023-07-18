@@ -80,6 +80,7 @@ function updateState(state) {
         $('.countdown').removeClass('countdown-paused');
         $('.countdown-value').empty()
         $('.next-launch-info').addClass('hidden');
+        setClock(0);
         removeMatricule('.next-launch-matricule');
         $('.next-launch-project-name').text('');
         $('.next-launch-club').text('');
