@@ -171,7 +171,8 @@
         <script>
             let getTimeURL = '{{ time_url | safe }}';
             let loadStateURL = '{{ state_url | safe }}';
-        </script>        
+            let stateStreamURL = '{{ state_stream_url | safe }}';
+        </script>
         <script src="/static/js/cash.min.js"></script>
         <script src="/static/js/bootstrap.bundle.min.js"></script>
         <script src="/static/js/main.js"></script>

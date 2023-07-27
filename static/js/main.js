@@ -1,6 +1,7 @@
-let lastUpdate = 0;
-let updateRequest = undefined;
 let localTimestampDiff = 0;
+let currentState = undefined;
+let evtSource = undefined;
+
 
 function millis() {
     return Date.now();
@@ -36,51 +37,48 @@ function updateCurrentTime() {
 }
 
 function update() {
-    if (updateRequest == undefined) {
-        updateRequest = new XMLHttpRequest();
-        updateRequest.onreadystatechange = function() {
-            if (this.readyState == 4) {
-                if (this.status == 200) {
-                    state = JSON.parse(this.response);
-                    updateState(state);
-                    lastUpdate = millis();
-                }
-                updateRequest = undefined;
+    request = new XMLHttpRequest();
+    request.onreadystatechange = function() {
+        if (this.readyState == 4) {
+            if (this.status == 200) {
+                state = JSON.parse(this.response);
+                updateState(state);
+                setConnectionState(true);
             }
-        };
-        updateRequest.ontimeout = function(e) {
-            updateRequest = undefined;
         }
-        updateRequest.timeout = 3000;
-        updateRequest.open('GET', loadStateURL, true);
-        updateRequest.send();
+    };
+    request.ontimeout = function(e) {
+        setConnectionState(false);
     }
+    request.timeout = 5000;
+    request.open('GET', loadStateURL, true);
+    request.send();
 }
 
-function updateState(state) {
+function updateState(newState) {
     // Countdown and Next launch
-    if (state.next_launch) {
-        if (state.next_launch.countdown_paused) {
+    if (newState.next_launch) {
+        if (newState.next_launch.countdown_paused) {
             $('.countdown').addClass('countdown-paused');
         } else {
             $('.countdown').removeClass('countdown-paused');
         }
-        let countdown = updateCountdown('.countdown-value', state.last_update, state.next_launch.countdown, state.next_launch.countdown_paused);
-        setVisible('.countdown-value', state.next_launch.countdown != null);
-        setClock(countdown);
+        let countdown = updateCountdown('.countdown-value', newState.next_launch.last_update, newState.next_launch.countdown, newState.next_launch.countdown_paused);
+        setVisible('.countdown-value', newState.next_launch.countdown != null);
+        setMainClock(countdown);
         $('.next-launch-empty').addClass('hidden');
-        setMatricule('.next-launch-matricule', state.next_launch.code);
-        $('.next-launch-project-name').text(state.next_launch.name);
-        $('.next-launch-club').text(state.next_launch.club_name);
-        $('.next-launch-launchpad').text(state.next_launch.launchpad_name);
-        $('.next-launch-rocket-color').text(state.next_launch.rocket_color);
-        $('.next-launch-parachute-color').text(state.next_launch.parachute_color);
+        setMatricule('.next-launch-matricule', newState.next_launch.code);
+        $('.next-launch-project-name').text(newState.next_launch.name);
+        $('.next-launch-club').text(newState.next_launch.club_name);
+        $('.next-launch-launchpad').text(newState.next_launch.launchpad_name);
+        $('.next-launch-rocket-color').text(newState.next_launch.rocket_color);
+        $('.next-launch-parachute-color').text(newState.next_launch.parachute_color);
         $('.next-launch-info').removeClass('hidden');
     } else {
         $('.countdown').removeClass('countdown-paused');
         $('.countdown-value').empty()
         $('.next-launch-info').addClass('hidden');
-        setClock(0);
+        setMainClock(0);
         removeMatricule('.next-launch-matricule');
         $('.next-launch-project-name').text('');
         $('.next-launch-club').text('');
@@ -91,21 +89,21 @@ function updateState(state) {
     }
 
     // Safety lights
-    updateLight('weather', state.safety_checks.weather);
-    updateLight('zone-safety', state.safety_checks.zone_safety);
-    updateLight('zone-fx', state.zones.fx);
-    updateLight('zone-mf', state.zones.mf);
+    updateLight('weather', newState.safety_checks.weather);
+    updateLight('zone-safety', newState.safety_checks.zone_safety);
+    updateLight('zone-fx', newState.zones.fx);
+    updateLight('zone-mf', newState.zones.mf);
 
     // Launchpads
     $('.launchpad').each(function(launchpad) {
         let launchpadType = $(launchpad).data('launchpadType');
         let launchpadName = $(launchpad).data('launchpadName');
-        let launchpadState = state['launchpads_' + launchpadType][launchpadName];
+        let launchpadState = newState['launchpads_' + launchpadType][launchpadName];
         if (launchpadState == null) {
             $('.launchpad-' + launchpadName + '-info').addClass('hidden');
             $('.launchpad-' + launchpadName + '-empty').removeClass('hidden');
         } else {
-            updateCountdown('.launchpad-' + launchpadName + '-countdown-value', state.last_update, launchpadState.countdown, launchpadState.countdown_paused);
+            updateCountdown('.launchpad-' + launchpadName + '-countdown-value', launchpadState.last_update, launchpadState.countdown, launchpadState.countdown_paused);
             setVisible('.launchpad-' + launchpadName + '-countdown', launchpadState.countdown != null);
             setClassIf('.launchpad-' + launchpadName + '-countdown', 'launchpad-countdown-paused', launchpadState.countdown_paused);
             setMatricule('.launchpad-' + launchpadName + '-matricule', launchpadState.code);
@@ -145,7 +143,7 @@ function updateState(state) {
     });
 
     for (let place of ['clubs-tent', 'jupiter']) {
-        let projects = state[place.replace('-', '_')];
+        let projects = newState[place.replace('-', '_')];
         let container = $('.' + place + '-info');
         container.empty();
         for (let project of projects) {
@@ -154,13 +152,15 @@ function updateState(state) {
         }
     }
 
-    if (state.message) {
-        $('.banner-text').text(state.message);
+    if (newState.message) {
+        $('.banner-text').text(newState.message);
         $('.banner').removeClass('hidden');
     } else {
         $('.banner').addClass('hidden');
         $('.banner-text').text('');
     }
+
+    currentState = newState;
 }
 
 function updateLight(light, color) {
@@ -205,7 +205,7 @@ function setClassIf(el, cls, condition) {
     }
 }
 
-function drawClock() {
+function drawMainClock() {
     let nDots = 60;
     for (let i = 0; i < nDots; i++) {
         let deg = i * 360 / nDots;
@@ -256,7 +256,7 @@ function updateCountdown(el, lastUpdate, countdown, paused) {
     return currentCountdownBak;
 }
 
-function setClock(seconds) {
+function setMainClock(seconds) {
     seconds = Math.abs(Math.floor(seconds) % 60);
     let nDots = 60;
     for (let i = 0; i < nDots; i++) {
@@ -268,20 +268,64 @@ function setClock(seconds) {
     }
 }
 
-function checkUpdate() {
-    if (millis() - lastUpdate > 3000) {
-        $('.overlay-loading').removeClass('hidden');
-        $('.header').removeClass('header-animated');
-    } else {
-        $('.overlay-loading').addClass('hidden');
-        $('.header').addClass('header-animated');
+function updateTimers() {
+    updateCurrentTime();
+
+    if (currentState) {
+        if (currentState.next_launch) {
+            let countdown = updateCountdown('.countdown-value', currentState.next_launch.last_update, currentState.next_launch.countdown, currentState.next_launch.countdown_paused);
+            setMainClock(countdown);
+        }
+
+        $('.launchpad').each(function(launchpad) {
+            let launchpadType = $(launchpad).data('launchpadType');
+            let launchpadName = $(launchpad).data('launchpadName');
+            let launchpadState = currentState['launchpads_' + launchpadType][launchpadName];
+            if (launchpadState != null) {
+                updateCountdown('.launchpad-' + launchpadName + '-countdown-value', launchpadState.last_update, launchpadState.countdown, launchpadState.countdown_paused);
+            }
+        });
     }
 }
 
-drawClock();
-computeClockDiff();
-updateCurrentTime();
-update();
-setInterval(update, 1000);
-setInterval(checkUpdate, 1000);
-setInterval(updateCurrentTime, 1000);
+function connect() {
+    console.log("Connecting to the API...");
+    if (evtSource != undefined) {
+        return;
+    }
+    evtSource = new EventSource(stateStreamURL);
+    evtSource.onopen = (e) => {
+        console.log("Connected !");
+        setConnectionState(true);
+    };
+    evtSource.onmessage = (event) => {
+        updateState(JSON.parse(event.data));
+        setConnectionState(true);
+    }
+    evtSource.onerror = (e) => {
+        console.log("Unable to connect to the API, trying again shortly...");
+        setConnectionState(false);
+        evtSource.close();
+        evtSource = undefined;
+        setTimeout(connect, 5000);
+    };
+}
+
+function setConnectionState(connected) {
+    if (connected) {
+        $('.overlay-loading').addClass('hidden');
+        $('.header').addClass('header-animated');
+    } else {
+        $('.overlay-loading').removeClass('hidden');
+        $('.header').removeClass('header-animated');
+    }
+}
+
+window.addEventListener("DOMContentLoaded", (event) => {
+    drawMainClock();
+    computeClockDiff();
+    updateTimers();
+    update();
+    setInterval(updateTimers, 1000);
+    connect();
+});

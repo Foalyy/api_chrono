@@ -3,8 +3,11 @@ use std::ops::Deref;
 use chrono_state::{ChronoState, ChronoStateUpdate, LaunchpadDetails, LaunchpadType};
 use config::Config;
 use rocket::fs::FileServer;
+use rocket::response::stream::{Event, EventStream};
 use rocket::serde::json::Json;
-use rocket::{fairing::AdHoc, tokio::sync::RwLock, State};
+use rocket::tokio::select;
+use rocket::tokio::sync::broadcast::{channel, error::RecvError, Sender};
+use rocket::{fairing::AdHoc, tokio::sync::RwLock, Shutdown, State};
 use rocket_dyn_templates::{context, Template};
 use utils::timestamp;
 
@@ -25,6 +28,7 @@ fn index(launchpads: &State<Vec<LaunchpadDetails>>) -> Template {
         context! {
             time_url: uri!(time()).to_string(),
             state_url: uri!(state()).to_string(),
+            state_stream_url: uri!(state_stream()).to_string(),
             launchpads: launchpads.deref()
         },
     )
@@ -40,14 +44,35 @@ async fn state(chrono_state: &State<RwLock<ChronoState>>) -> ChronoState {
     chrono_state.read().await.clone()
 }
 
+#[get("/state-stream")]
+async fn state_stream(queue: &State<Sender<ChronoState>>, mut end: Shutdown) -> EventStream![] {
+    let mut rx = queue.subscribe();
+    EventStream! {
+        loop {
+            let state = select! {
+                state = rx.recv() => match state {
+                    Ok(state) => state,
+                    Err(RecvError::Closed) => break,
+                    Err(RecvError::Lagged(_)) => continue,
+                },
+                _ = &mut end => break,
+            };
+
+            yield Event::json(&state);
+        }
+    }
+}
+
 #[post("/state", format = "application/json", data = "<update>")]
 async fn update_state(
     _api_key: ApiKey,
     update: Json<ChronoStateUpdate>,
     chrono_state: &State<RwLock<ChronoState>>,
+    queue: &State<Sender<ChronoState>>,
 ) -> Json<ChronoState> {
     let mut state = chrono_state.write().await;
     state.update_with(update.into_inner());
+    queue.send(state.clone()).ok();
     Json(state.clone())
 }
 
@@ -93,9 +118,13 @@ fn rocket() -> _ {
     ];
 
     rocket::build()
-        .mount("/", routes![index, time, state, update_state, reset_state])
+        .mount(
+            "/",
+            routes![index, time, state, state_stream, update_state, reset_state],
+        )
         .mount("/static", FileServer::from("static/").rank(0))
         .manage(RwLock::new(ChronoState::default()))
+        .manage(channel::<ChronoState>(1).0)
         .manage(launchpads)
         .attach(AdHoc::config::<Config>())
         .attach(Template::fairing())

@@ -33,6 +33,8 @@ pub struct Zones {
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, Hash)]
 pub struct NextLaunch {
+    #[serde(skip_deserializing)]
+    pub last_update: Timestamp,
     #[serde(flatten)]
     pub project: Project,
     #[serde(flatten)]
@@ -83,6 +85,7 @@ pub enum LaunchpadType {
 
 #[derive(Debug, Clone, Default, Serialize, Hash)]
 pub struct LaunchpadState {
+    pub last_update: Timestamp,
     pub countdown: isize,
     pub countdown_paused: bool,
     pub waiting_time: usize,
@@ -233,7 +236,8 @@ impl ChronoState {
     }
 
     pub fn update_with(&mut self, update: ChronoStateUpdate) {
-        self.last_update = Some(timestamp());
+        let current_timestamp = timestamp();
+        self.last_update = Some(current_timestamp);
         if let Some(zones) = update.zones {
             if let Some(mf) = zones.mf {
                 self.zones.mf = mf;
@@ -252,6 +256,9 @@ impl ChronoState {
         }
         if let Some(next_launch) = update.next_launch {
             self.next_launch = next_launch;
+            if let Some(next_launch) = &mut self.next_launch {
+                next_launch.last_update = current_timestamp;
+            }
         }
         if let Some(clubs_tent) = update.clubs_tent {
             self.clubs_tent = clubs_tent;
@@ -312,6 +319,7 @@ impl ChronoState {
                 *state = Some(LaunchpadState::default());
             }
             if let Some(state) = state {
+                state.last_update = timestamp();
                 if let Some(countdown) = update.countdown {
                     state.countdown = countdown;
                 }
