@@ -165,10 +165,12 @@ function updateState(state) {
 
 function updateLight(light, color) {
     if (!$('.status-' + light).hasClass('status-light-' + color)) {
-        $('.status-' + light).removeClass('status-light-red status-light-green status-light-unknown');
+        $('.status-' + light).removeClass('status-light-red status-light-orange status-light-green status-light-unknown');
         $('.status-' + light).addClass('status-light-' + color);
         $('.status-' + light + ' .status-light-icon-right').removeClass('fa-triangle-exclamation fa-circle-check fa-circle-question');
         if (color == 'red') {
+            $('.status-' + light + ' .status-light-icon-right').addClass('fa-triangle-exclamation');
+        } else if (color == 'orange') {
             $('.status-' + light + ' .status-light-icon-right').addClass('fa-triangle-exclamation');
         } else if (color == 'green') {
             $('.status-' + light + ' .status-light-icon-right').addClass('fa-circle-check');
